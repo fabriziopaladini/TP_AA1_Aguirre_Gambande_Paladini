@@ -3,6 +3,22 @@
 Trabajo Práctico: Predicción de precios de casas — Aprendizaje Automático 1
 Tecnicatura en Inteligencia Artificial — FCEIA (UNR)
 
+## Instalación
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Registrar el entorno como kernel de Jupyter (una sola vez):
+
+```bash
+python -m ipykernel install --user --name=tp-aa1
+```
+
+Luego, al abrir `TP-regresion-AA1.ipynb`, seleccionar el kernel `tp-aa1`.
+
 ## Objetivos
 
 Familiarizarse con la biblioteca scikit-learn y las herramientas que brinda para el
