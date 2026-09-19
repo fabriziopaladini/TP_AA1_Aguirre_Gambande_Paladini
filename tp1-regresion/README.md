@@ -5,6 +5,8 @@ Tecnicatura en Inteligencia Artificial — FCEIA (UNR)
 
 Notebook de trabajo: [`TP-regresion-AA1.ipynb`](TP-regresion-AA1.ipynb)
 
+Experimentos y comparaciones entre ramas: [`EXPERIMENTOS.md`](EXPERIMENTOS.md)
+
 ## Objetivos
 
 Familiarizarse con la biblioteca scikit-learn y las herramientas que brinda para el
