@@ -13,7 +13,7 @@ Las cifras de este documento salen de ese notebook.
 |---|---|---|
 | `aguirre` | – | Notebook original: split sin estratificar, CHAS imputada con CatBoost, hiperparámetros de Gradient Descent elegidos mirando el R² de test. |
 | `prueba-estratificacion` | `aguirre` | Split estratificado por CHAS, CHAS imputada con la moda, RAD excluida, `lr`/`epochs` de GD con K-Fold, y el notebook de experimentos. |
-| `prueba-colinealidad` | `aguirre` | Notebook original (sin estratificar, con CatBoost) + RAD excluida + `lr`/`epochs` de GD con K-Fold. |
+| `prueba-colinealidad` | `aguirre` | Notebook original (sin estratificar, con CatBoost) + RAD excluida + `lr`/`epochs` de GD con K-Fold, y el notebook de experimentos. |
 
 Para ver las diferencias entre ramas:
 
