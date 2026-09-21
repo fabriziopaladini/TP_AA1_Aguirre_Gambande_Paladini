@@ -47,6 +47,14 @@ código modificadas son pocas y están comentadas.
 Lo que **no** cambió: `RobustScaler` + `KNNImputer` para las numéricas (con `fit` solo en train),
 `log1p` sobre CRIM y DIS, y `StandardScaler` final (`fit` solo en train).
 
+## Qué hay en `experimentos/`
+
+| Archivo | Qué es |
+|---|---|
+| [`experimentos-AA1.ipynb`](experimentos/experimentos-AA1.ipynb) | Notebook con los seis experimentos (código, tablas y gráficos generados al ejecutarlo). |
+| [`notebook-original-sin-RAD.ipynb`](experimentos/notebook-original-sin-RAD.ipynb) | El notebook original del TP (sin estratificar, con CatBoost) con solo dos cambios: RAD excluida y `lr`/`epochs` de GD con K-Fold. Es el notebook de la rama `prueba-colinealidad` (ver el punto 7 de los resultados). |
+| [`resultados/`](experimentos/resultados/) | Un CSV por experimento, con los resultados de cada semilla. |
+
 ## Cómo se evaluó
 
 Con un único split el R² de test varía mucho según la semilla (entre ≈ 0.43 y 0.75 para
@@ -151,6 +159,26 @@ diferencias entre esquemas no son pareables y parte del aumento de la media se d
 aleatorio a veces deja un test con poca dispersión de MEDV, lo que baja el R². Con 10 semillas la
 estimación de un desvío es imprecisa, así que el resultado es sugerente pero no concluyente.
 
+### 7. Notebook original con RAD excluida (rama `prueba-colinealidad`)
+
+[`notebook-original-sin-RAD.ipynb`](experimentos/notebook-original-sin-RAD.ipynb) aísla el efecto de la
+colinealidad sobre el notebook original: no estratifica el split, imputa CHAS con CatBoost, excluye RAD y elige
+`lr`/`epochs` de GD con K-Fold. Se ejecutó completo (semilla 42, con sus 12 gráficos). Resultados en test, junto a
+los del notebook del TP, que además estratifica por CHAS e imputa con la moda (y también excluye RAD):
+
+| Modelo | R² de test, original sin RAD | R² de test, TP | RMSE de test, original sin RAD | RMSE de test, TP |
+|---|---|---|---|---|
+| LinearRegression | 0.5884 | 0.6988 | 5.5241 | 5.1668 |
+| Ridge | 0.5817 | 0.7022 | 5.5689 | 5.1377 |
+| Gradient Descent | 0.5751 | 0.7047 | 5.6123 | 5.1162 |
+| Lasso | 0.5743 | 0.7049 | 5.6178 | 5.1142 |
+| ElasticNet | 0.5673 | 0.7042 | 5.6635 | 5.1207 |
+
+Los dos notebooks tienen filas de test distintas (por la estratificación), así que la diferencia entre columnas no
+es comparable de forma pareada y no debe leerse como una mejora del modelo: es la misma diferencia de partición que
+se analiza en los experimentos 1 y 6. Lo que sí muestra este notebook es que, sin estratificar, la conclusión de la
+colinealidad (el experimento 2b) se mantiene: excluir RAD casi no cambia las métricas.
+
 ## Notas y limitaciones
 
 - Con solo 5 semillas (10 en el experimento 6) los estadísticos son orientativos; las diferencias son chicas
@@ -158,8 +186,9 @@ estimación de un desvío es imprecisa, así que el resultado es sugerente pero 
 - Los experimentos parten de una base con todas las variables, mientras que el notebook del TP en
   `prueba-estratificacion` excluye RAD; por eso algunas cifras (por ejemplo las de Gradient Descent)
   no coinciden en la tercera cifra decimal con las del TP.
-- `prueba-colinealidad` usa CatBoost para imputar CHAS. `catboost` no figura en `requirements.txt`;
-  el notebook lo instala con `!pip install catboost`, y localmente hace falta `pip install catboost`.
-  El notebook de experimentos también lo necesita solo para las configuraciones con CatBoost (si no está
-  instalado, las saltea).
+- `notebook-original-sin-RAD.ipynb` usa CatBoost para imputar CHAS. `catboost` no figura en `requirements.txt`;
+  el notebook lo instala con `!pip install catboost` (pensado para Google Colab), y localmente hace falta
+  `pip install catboost`. El notebook de experimentos también lo necesita solo para las configuraciones con
+  CatBoost (si no está instalado, las saltea). CatBoost crea una carpeta `catboost_info/` al entrenar, que
+  está en `.gitignore`.
 - Los R² y RMSE pueden diferir en la tercera cifra decimal según la versión de las librerías.

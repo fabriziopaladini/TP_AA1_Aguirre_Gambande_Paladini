@@ -6,7 +6,10 @@ Tecnicatura en Inteligencia Artificial — FCEIA (UNR)
 Notebook de trabajo: [`TP-regresion-AA1.ipynb`](TP-regresion-AA1.ipynb)
 
 Experimentos y comparaciones entre ramas: [`EXPERIMENTOS.md`](EXPERIMENTOS.md) (resumen) y
-[`experimentos/experimentos-AA1.ipynb`](experimentos/experimentos-AA1.ipynb) (código y resultados).
+[`experimentos/experimentos-AA1.ipynb`](experimentos/experimentos-AA1.ipynb) (código y resultados de los
+experimentos). La carpeta `experimentos/` también tiene
+[`notebook-original-sin-RAD.ipynb`](experimentos/notebook-original-sin-RAD.ipynb), el notebook original con solo la
+colinealidad tratada, y los CSV de resultados.
 
 ## Objetivos
 
