@@ -5,7 +5,8 @@ Tecnicatura en Inteligencia Artificial — FCEIA (UNR)
 
 Notebook de trabajo: [`TP-regresion-AA1.ipynb`](TP-regresion-AA1.ipynb)
 
-Experimentos y comparaciones entre ramas: [`EXPERIMENTOS.md`](EXPERIMENTOS.md)
+Experimentos y comparaciones entre ramas: [`EXPERIMENTOS.md`](EXPERIMENTOS.md) (resumen) y
+[`experimentos/experimentos-AA1.ipynb`](experimentos/experimentos-AA1.ipynb) (código y resultados).
 
 ## Objetivos
 

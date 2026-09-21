@@ -1,18 +1,21 @@
 # Experimentos sobre el TP1 de regresión
 
-Este documento describe los cambios hechos sobre el notebook `TP-regresion-AA1.ipynb`
-en dos ramas de prueba y los resultados obtenidos. Ambas salen de `aguirre`
-(commit `da4c1b8`), que conserva el notebook original.
+Este documento resume las decisiones de criterio que se tomaron en el notebook del TP
+(`TP-regresion-AA1.ipynb`) y los experimentos que las respaldan. **Los experimentos se
+pueden ver y volver a ejecutar en [`experimentos/experimentos-AA1.ipynb`](experimentos/experimentos-AA1.ipynb)**:
+ahí está el código de cada prueba y todas las tablas y gráficos se generan al ejecutarlo
+(los resultados también se guardan como CSV en [`experimentos/resultados/`](experimentos/resultados/)).
+Las cifras de este documento salen de ese notebook.
 
 ## Ramas
 
 | Rama | Parte de | Qué contiene |
 |---|---|---|
 | `aguirre` | – | Notebook original: split sin estratificar, CHAS imputada con CatBoost, hiperparámetros de Gradient Descent elegidos mirando el R² de test. |
-| `prueba-estratificacion` | `aguirre` | Split estratificado por CHAS, CHAS imputada con la moda, RAD excluida, `lr`/`epochs` de GD con K-Fold. |
-| `prueba-colinealidad` | `aguirre` | Notebook original (sin estratificar, con CatBoost) + RAD excluida + `lr`/`epochs` de GD con K-Fold. |
+| `prueba-estratificacion` | `aguirre` | Split estratificado por CHAS, CHAS imputada con la moda, RAD excluida, `lr`/`epochs` de GD con K-Fold, y el notebook de experimentos. |
+| `prueba-colinealidad` | `aguirre` | Notebook original (sin estratificar, con CatBoost) + RAD excluida + `lr`/`epochs` de GD con K-Fold, y el notebook de experimentos. |
 
-Para ver las diferencias:
+Para ver las diferencias entre ramas:
 
 ```bash
 git diff aguirre prueba-estratificacion -- tp1-regresion/TP-regresion-AA1.ipynb
@@ -23,7 +26,7 @@ git log --oneline aguirre..prueba-colinealidad
 El `diff` de un `.ipynb` es ruidoso porque incluye las salidas de las celdas. Las celdas de
 código modificadas son pocas y están comentadas.
 
-## Cambios en el notebook
+## Cambios en el notebook del TP
 
 1. **Estratificación por CHAS** (solo `prueba-estratificacion`). El split usa
    `stratify=X["CHAS"].fillna(-1)`. El `fillna(-1)` solo vive dentro del argumento `stratify`
@@ -46,136 +49,117 @@ Lo que **no** cambió: `RobustScaler` + `KNNImputer` para las numéricas (con `f
 
 ## Cómo se evaluó
 
-Con un único split el R² de test varía mucho según la semilla (entre ≈ 0.43 y 0.74 para
-LinearRegression). Por eso cada configuración se corrió con **5 semillas** (`RANDOM_STATE` =
-42, 1, 2, 3, 4). Para comparar configuraciones dentro de un mismo notebook se usó la
-**diferencia pareada por semilla** (misma partición train/test), cuyo desvío es mucho menor
-que el desvío bruto entre semillas (≈ 0.003–0.011 contra ≈ 0.11). Los notebooks estratificado
-y no estratificado **no** se pueden parear: con la misma semilla las filas de test son distintas.
+Con un único split el R² de test varía mucho según la semilla (entre ≈ 0.43 y 0.75 para
+LinearRegression). Por eso cada configuración se corrió con **5 semillas** (`random_state` del
+split = 42, 1, 2, 3, 4), y con 10 en el experimento 6. Para comparar configuraciones dentro de un
+mismo experimento se usó la **diferencia pareada por semilla** (misma partición train/test), cuyo
+desvío es mucho menor que el desvío bruto entre semillas. Los esquemas de estratificación (experimento 6)
+no se pueden parear, porque cambian las filas de test.
 
-Los valores de `alpha` de Lasso/Ridge/ElasticNet se eligen con `cv=5` dentro de train en cada
-semilla; test se usa una única vez para la métrica final.
+Cada experimento cambia **un solo factor** respecto de una configuración base (split estratificado
+por CHAS, CHAS con la moda, todas las variables, `lr`/`epochs` con K-Fold y grilla por defecto de
+`RidgeCV`). Los valores de `alpha` de Lasso/Ridge/ElasticNet se eligen con `cv=5` dentro de train
+en cada semilla; test se usa una única vez para la métrica final. El notebook de experimentos
+incluye una celda que comprueba que su pipeline reproduce los resultados del notebook del TP
+para la semilla 42.
 
 ## Resultados
 
-### 1. Estratificación e imputación (LinearRegression, R² de test)
+Todas las cifras son medias entre semillas; "±" es el desvío entre semillas (o, en las diferencias
+pareadas, el desvío de la diferencia). "Peor en n/5" cuenta en cuántas semillas la configuración
+empeora respecto de la base.
 
-| Configuración | Semilla 42 |
-|---|---|
-| Original (sin estratificar, CatBoost) | 0.589 |
-| Sin estratificar, moda | 0.603 |
-| Estratificado, CatBoost | 0.709 |
-| Estratificado, moda | 0.709 |
+### 1. Estratificación e imputación de CHAS (LinearRegression, 5 semillas)
 
-Promedio de 5 semillas: original 0.562 ± 0.113 y estratificado + moda 0.596 ± 0.119 (RMSE
-5.88 y 6.07). La imputación por moda cambia el resultado ≈ 0.014; el salto de la semilla 42
-proviene de que el split estratificado deja otras filas en test. No hay evidencia de que estratificar
-mejore el modelo, y estratificar solo por CHAS reduce poco la variabilidad entre semillas (en la
-sección 6 se prueban otros esquemas).
+| Configuración | R² de test | RMSE de test |
+|---|---|---|
+| Sin estratificar + CatBoost (notebook original) | 0.562 ± 0.113 | 5.880 ± 0.875 |
+| Sin estratificar + moda | 0.564 ± 0.116 | 5.867 ± 0.910 |
+| Estratificado + CatBoost | 0.595 ± 0.118 | 6.074 ± 1.007 |
+| Estratificado + moda | 0.596 ± 0.119 | 6.066 ± 1.004 |
 
-### 2. Colinealidad (promedio de 5 semillas, LinearRegression, R² de test / RMSE de test)
+Imputar con la moda en lugar de CatBoost, con el mismo split: +0.002 ± 0.010 de R² sin estratificar
+(peor en 2/5 semillas) y +0.001 ± 0.005 estratificando (peor en 1/5). O sea, no hay diferencia apreciable.
+Estratificar por CHAS deja otras filas en test, por lo que su columna no es comparable de forma pareada
+con la de sin estratificar; en promedio no hay evidencia de que mejore el modelo.
 
-| Notebook | Todas | Sin RAD | Sin TAX | Sin ambas |
+### 2. Colinealidad
+
+VIF (filas completas): TAX 9.0, RAD 7.5, NOX 4.4, INDUS 4.0, DIS 4.0; correlación RAD–TAX 0.88.
+
+R² de test de LinearRegression, 5 semillas, y diferencia pareada contra "todas":
+
+| Base | Todas | Sin RAD | Sin TAX | Sin ambas |
 |---|---|---|---|---|
-| Original | 0.562 / 5.880 | 0.554 / 5.937 | 0.554 / 5.959 | 0.550 / 5.987 |
-| Estratificado + moda | 0.596 / 6.066 | 0.593 / 6.092 | 0.582 / 6.180 | 0.580 / 6.195 |
+| Estratificado + moda (TP) | 0.596 ± 0.119 | 0.593 ± 0.116 | 0.582 ± 0.115 | 0.580 ± 0.113 |
+| Δ pareada | – | −0.003 ± 0.004 (peor en 4/5) | −0.014 ± 0.010 (peor en 5/5) | −0.016 ± 0.008 (peor en 5/5) |
+| Original (sin estratificar + CatBoost) | 0.562 ± 0.113 | 0.554 ± 0.114 | 0.554 ± 0.090 | 0.550 ± 0.097 |
+| Δ pareada | – | −0.008 ± 0.008 (peor en 5/5) | −0.008 ± 0.053 (peor en 4/5) | −0.013 ± 0.058 (peor en 4/5) |
 
-Diferencia pareada del R² de test contra "todas" (media ± desvío de la diferencia entre semillas):
+Coeficientes estandarizados de LinearRegression (base estratificado + moda, media ± desvío entre semillas):
 
-| Notebook | Sin RAD | Sin TAX | Sin ambas |
-|---|---|---|---|
-| Original | −0.008 ± 0.008 | −0.008 ± 0.053 | −0.013 ± 0.058 |
-| Estratificado + moda | −0.003 ± 0.004 | −0.014 ± 0.010 | −0.016 ± 0.008 |
-
-Coeficientes estandarizados de LinearRegression (media ± desvío entre semillas):
-
-| Notebook | Modelo | TAX | RAD |
-|---|---|---|---|
-| Original | Todas | −2.99 ± 0.69 | +1.11 ± 0.34 |
-| Original | Sin RAD | −2.38 ± 0.52 | – |
-| Original | Sin TAX | – | −0.79 ± 0.15 |
-| Estratificado + moda | Todas | −2.74 ± 0.29 | +1.00 ± 0.34 |
-| Estratificado + moda | Sin RAD | −2.19 ± 0.15 | – |
-| Estratificado + moda | Sin TAX | – | −0.73 ± 0.14 |
-
-Conclusión: sacar RAD cuesta muy poco en R² (−0.003 a −0.008) y estabiliza el coeficiente de
-TAX. El signo de RAD pasa de + a − cuando se saca TAX, evidencia de colinealidad. Sacar TAX
-cuesta más porque tiene más relación con MEDV (r = −0.44 contra −0.34 de RAD). Ninguna variante
-mejora el rendimiento predictivo: la exclusión se justifica por interpretación, no por métricas.
-
-### 3. Transformación Yeo-Johnson sobre B (R² de test, promedio de 5 semillas)
-
-| Notebook | LinearRegression sin transformar | Con Yeo-Johnson |
+| Modelo | TAX | RAD |
 |---|---|---|
-| Original | 0.562 | 0.554 |
-| Estratificado + moda | 0.596 | 0.590 |
+| Todas | −2.74 ± 0.29 | +1.00 ± 0.34 |
+| Sin RAD | −2.19 ± 0.15 | – |
+| Sin TAX | – | −0.73 ± 0.14 |
 
-B tiene una cola izquierda marcada (skew ≈ −2.5); Yeo-Johnson (λ ≈ 3.4, ajustado solo en
-train) lo deja en ≈ −1.7. No mejora las métricas (en el original es peor en 5 de 5 semillas),
-por lo que B se deja sin transformar.
+Sacar RAD cuesta muy poco en R² y estabiliza el coeficiente de TAX (el desvío baja de 0.29 a 0.15).
+El signo de RAD pasa de + a − cuando se saca TAX, evidencia de colinealidad. Sacar TAX cuesta más.
+Ninguna variante mejora el rendimiento predictivo: la exclusión se justifica por interpretación, no por métricas.
 
-### 4. Selección de `lr` y `epochs` de Gradient Descent (R² de test de GD, promedio de 5 semillas)
+### 3. Transformación Yeo-Johnson sobre B (base estratificado + moda, 5 semillas)
 
-| Método de selección | Original | Estratificado |
-|---|---|---|
-| Mirando test (con fuga, versión anterior) | 0.554 | 0.593 |
-| Holdout 80/20 dentro de train | 0.551 | 0.586 |
-| K-Fold (5 folds) dentro de train | 0.550 | 0.591 |
-| LinearRegression (referencia) | 0.554 | 0.593 |
+B tiene skew −2.57; con Yeo-Johnson queda en −1.76. R² de test de LinearRegression: 0.596 ± 0.119 sin
+transformar y 0.590 ± 0.122 con Yeo-Johnson (Δ pareada −0.006 ± 0.010, peor en 3/5 semillas). No mejora
+las métricas, por lo que B se deja sin transformar.
 
-El valor obtenido eligiendo con test era levemente optimista. Con K-Fold la elección es más
-estable (7 de 10 corridas eligen `lr=0.01, epochs=500`). Cuando GD converge (lr de 0.05 a 0.1)
-coincide con la solución de mínimos cuadrados, y `lr=0.3` diverge. Los resultados de GD quedan a
-menos de 0.005 de R² de LinearRegression en promedio.
+### 4. Selección de `lr` y `epochs` de Gradient Descent (base estratificado + moda, 5 semillas)
 
-### 5. Grilla de `RidgeCV` (Ridge, 5 semillas)
+| Método de selección | R² de test de GD |
+|---|---|
+| `lr=0.1, epochs=200` (elegidos mirando test, con fuga) | 0.596 ± 0.119 |
+| Holdout 80/20 dentro de train | 0.589 ± 0.112 |
+| K-Fold (5 folds) dentro de train | 0.594 ± 0.115 |
+| LinearRegression (referencia) | 0.596 ± 0.119 |
 
-`RidgeCV(cv=5)` usa por defecto `alphas=(0.1, 1, 10)` y elegía siempre `alpha = 10`, el extremo
-superior de la grilla. Se probó `RidgeCV(alphas=np.logspace(-2, 3, 50), cv=5)`.
+Diferencia pareada de GD contra los valores con fuga: K-Fold −0.002 ± 0.005 (peor en 4/5) y holdout
+−0.008 ± 0.013 (peor en 3/5). La combinación elegida cambia con la semilla (K-Fold elige `lr=0.01, epochs=500`,
+`lr=0.1, epochs=500`, `lr=0.05, epochs=200` o `lr=0.01, epochs=200`). Cuando GD converge coincide con la solución
+de mínimos cuadrados, y `lr=0.3` diverge; el efecto de elegir con fuga es pequeño.
 
-| Notebook | `alpha` elegido (grilla ancha) | Δ R² de test | Δ RMSE de test |
-|---|---|---|---|
-| Original | de 7.2 a 47.2 | −0.005 ± 0.008 | +0.033 ± 0.053 |
-| Estratificado + moda | de 14.6 a 59.6 | −0.003 ± 0.012 | +0.034 ± 0.109 |
+### 5. Grilla de `RidgeCV` (base estratificado + moda, 5 semillas)
 
-(Δ = grilla ancha menos grilla por defecto; media ± desvío entre semillas.) La grilla por defecto
-estaba acotada: con la grilla ancha el `alpha` elegido es mayor a 10 en 3 de 5 semillas del original
-y en 5 de 5 del estratificado. Pero el rendimiento en test no mejora (queda igual o levemente peor),
-así que las conclusiones no cambian. Ampliar la grilla es una cuestión de rigor, no de rendimiento.
+`RidgeCV(cv=5)` usa por defecto `alphas=(0.1, 1, 10)` y elige siempre `alpha = 10`, el extremo superior.
+Con `np.logspace(-2, 3, 50)` el `alpha` elegido es mayor a 10 en las 5 semillas (de 11.5 a 59.6), pero el
+rendimiento en test no mejora: Δ R² −0.004 ± 0.013 (peor en 3/5) y Δ RMSE +0.044 ± 0.112. La grilla por defecto
+estaba acotada, pero ampliarla no cambia las conclusiones.
 
-### 6. Esquemas de estratificación (10 semillas)
-
-Se cambió solo el argumento `stratify` del split, sobre el notebook estratificado + moda con RAD
-excluida y K-Fold para GD. R² de test de LinearRegression:
+### 6. Esquemas de estratificación (10 semillas, LinearRegression)
 
 | Esquema | Media | Desvío entre semillas | Mín – máx |
 |---|---|---|---|
-| Sin estratificar | 0.561 | 0.095 | 0.432 – 0.667 |
-| Por CHAS (NaN como tercer estrato) | 0.601 | 0.089 | 0.472 – 0.735 |
-| Por MEDV (5 quintiles) | 0.624 | 0.067 | 0.498 – 0.743 |
-| Por CHAS × MEDV (3 terciles) | 0.634 | 0.054 | 0.556 – 0.714 |
-
-Código de cada variante:
-
-```python
-stratify=X['CHAS'].fillna(-1)                                                         # por CHAS
-stratify=pd.qcut(Y, 5, labels=False)                                                  # por MEDV
-stratify=X['CHAS'].fillna(-1).astype(str) + '_' + pd.qcut(Y, 3, labels=False).astype(str)  # CHAS x MEDV
-```
+| Sin estratificar | 0.564 | 0.094 | 0.433 – 0.672 |
+| Por CHAS (NaN como tercer estrato) | 0.600 | 0.088 | 0.471 – 0.736 |
+| Por MEDV (5 quintiles) | 0.616 | 0.070 | 0.501 – 0.748 |
+| Por CHAS × MEDV (3 terciles) | 0.631 | 0.058 | 0.547 – 0.718 |
 
 Estratificar por el target reduce la variabilidad de la evaluación entre semillas: el desvío pasa de
-0.095 a 0.067 con MEDV y a 0.054 combinando CHAS y MEDV. Ridge y Lasso muestran el mismo patrón.
-El modelo es el mismo en todos los casos; las diferencias entre esquemas no son pareables (cambian
-las filas de test) y parte del aumento de la media se debe a que un split aleatorio a veces deja un
-test con poca dispersión de MEDV, lo que baja el R². Con 10 semillas la estimación de un desvío es
-imprecisa, así que el resultado es sugerente pero no concluyente.
+0.094 a 0.070 con MEDV y a 0.058 combinando CHAS y MEDV; estratificar solo por CHAS lo reduce poco.
+Ridge, Lasso y ElasticNet muestran el mismo patrón. El modelo es el mismo en todos los casos; las
+diferencias entre esquemas no son pareables y parte del aumento de la media se debe a que un split
+aleatorio a veces deja un test con poca dispersión de MEDV, lo que baja el R². Con 10 semillas la
+estimación de un desvío es imprecisa, así que el resultado es sugerente pero no concluyente.
 
 ## Notas y limitaciones
 
-- Con solo 5 semillas (10 en la sección 6) los estadísticos son orientativos; las diferencias son chicas (≤ 0.02 de R²) salvo las de la sección 6.
-- Las cifras del notebook corresponden a la semilla 42; las tablas de este documento resumen
-  corridas con las 5 semillas que se hicieron cambiando `RANDOM_STATE`.
+- Con solo 5 semillas (10 en el experimento 6) los estadísticos son orientativos; las diferencias son chicas
+  (≤ 0.02 de R²) salvo las del experimento 6.
+- Los experimentos parten de una base con todas las variables, mientras que el notebook del TP en
+  `prueba-estratificacion` excluye RAD; por eso algunas cifras (por ejemplo las de Gradient Descent)
+  no coinciden en la tercera cifra decimal con las del TP.
 - `prueba-colinealidad` usa CatBoost para imputar CHAS. `catboost` no figura en `requirements.txt`;
   el notebook lo instala con `!pip install catboost`, y localmente hace falta `pip install catboost`.
-- Los R² y RMSE de este documento pueden diferir en la tercera cifra decimal de los del notebook
-  según la versión de las librerías.
+  El notebook de experimentos también lo necesita solo para las configuraciones con CatBoost (si no está
+  instalado, las saltea).
+- Los R² y RMSE pueden diferir en la tercera cifra decimal según la versión de las librerías.
