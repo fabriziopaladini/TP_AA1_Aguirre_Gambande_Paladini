@@ -70,7 +70,8 @@ semilla; test se usa una única vez para la métrica final.
 Promedio de 5 semillas: original 0.562 ± 0.113 y estratificado + moda 0.596 ± 0.119 (RMSE
 5.88 y 6.07). La imputación por moda cambia el resultado ≈ 0.014; el salto de la semilla 42
 proviene de que el split estratificado deja otras filas en test. No hay evidencia de que estratificar
-mejore el modelo ni de que reduzca la variabilidad entre semillas.
+mejore el modelo, y estratificar solo por CHAS reduce poco la variabilidad entre semillas (en la
+sección 6 se prueban otros esquemas).
 
 ### 2. Colinealidad (promedio de 5 semillas, LinearRegression, R² de test / RMSE de test)
 
@@ -127,9 +128,51 @@ estable (7 de 10 corridas eligen `lr=0.01, epochs=500`). Cuando GD converge (lr 
 coincide con la solución de mínimos cuadrados, y `lr=0.3` diverge. Los resultados de GD quedan a
 menos de 0.005 de R² de LinearRegression en promedio.
 
+### 5. Grilla de `RidgeCV` (Ridge, 5 semillas)
+
+`RidgeCV(cv=5)` usa por defecto `alphas=(0.1, 1, 10)` y elegía siempre `alpha = 10`, el extremo
+superior de la grilla. Se probó `RidgeCV(alphas=np.logspace(-2, 3, 50), cv=5)`.
+
+| Notebook | `alpha` elegido (grilla ancha) | Δ R² de test | Δ RMSE de test |
+|---|---|---|---|
+| Original | de 7.2 a 47.2 | −0.005 ± 0.008 | +0.033 ± 0.053 |
+| Estratificado + moda | de 14.6 a 59.6 | −0.003 ± 0.012 | +0.034 ± 0.109 |
+
+(Δ = grilla ancha menos grilla por defecto; media ± desvío entre semillas.) La grilla por defecto
+estaba acotada: con la grilla ancha el `alpha` elegido es mayor a 10 en 3 de 5 semillas del original
+y en 5 de 5 del estratificado. Pero el rendimiento en test no mejora (queda igual o levemente peor),
+así que las conclusiones no cambian. Ampliar la grilla es una cuestión de rigor, no de rendimiento.
+
+### 6. Esquemas de estratificación (10 semillas)
+
+Se cambió solo el argumento `stratify` del split, sobre el notebook estratificado + moda con RAD
+excluida y K-Fold para GD. R² de test de LinearRegression:
+
+| Esquema | Media | Desvío entre semillas | Mín – máx |
+|---|---|---|---|
+| Sin estratificar | 0.561 | 0.095 | 0.432 – 0.667 |
+| Por CHAS (NaN como tercer estrato) | 0.601 | 0.089 | 0.472 – 0.735 |
+| Por MEDV (5 quintiles) | 0.624 | 0.067 | 0.498 – 0.743 |
+| Por CHAS × MEDV (3 terciles) | 0.634 | 0.054 | 0.556 – 0.714 |
+
+Código de cada variante:
+
+```python
+stratify=X['CHAS'].fillna(-1)                                                         # por CHAS
+stratify=pd.qcut(Y, 5, labels=False)                                                  # por MEDV
+stratify=X['CHAS'].fillna(-1).astype(str) + '_' + pd.qcut(Y, 3, labels=False).astype(str)  # CHAS x MEDV
+```
+
+Estratificar por el target reduce la variabilidad de la evaluación entre semillas: el desvío pasa de
+0.095 a 0.067 con MEDV y a 0.054 combinando CHAS y MEDV. Ridge y Lasso muestran el mismo patrón.
+El modelo es el mismo en todos los casos; las diferencias entre esquemas no son pareables (cambian
+las filas de test) y parte del aumento de la media se debe a que un split aleatorio a veces deja un
+test con poca dispersión de MEDV, lo que baja el R². Con 10 semillas la estimación de un desvío es
+imprecisa, así que el resultado es sugerente pero no concluyente.
+
 ## Notas y limitaciones
 
-- Con solo 5 semillas los estadísticos son orientativos; las diferencias son chicas (≤ 0.02 de R²).
+- Con solo 5 semillas (10 en la sección 6) los estadísticos son orientativos; las diferencias son chicas (≤ 0.02 de R²) salvo las de la sección 6.
 - Las cifras del notebook corresponden a la semilla 42; las tablas de este documento resumen
   corridas con las 5 semillas que se hicieron cambiando `RANDOM_STATE`.
 - `prueba-colinealidad` usa CatBoost para imputar CHAS. `catboost` no figura en `requirements.txt`;
