@@ -5,7 +5,7 @@ Tecnicatura en Inteligencia Artificial — FCEIA (UNR).
 
 ## Trabajos prácticos
 
-- [TP1 — Regresión](tp1-regresion/README.md): predicción de precios de casas.
+- [TP1 — Regresión](TP_1/README.md): predicción de precios de casas.
 
 ## Instalación
 
@@ -23,4 +23,4 @@ Registrar el entorno como kernel de Jupyter (una sola vez):
 python -m ipykernel install --user --name=tp-aa1
 ```
 
-Luego, al abrir cualquiera de las notebooks, seleccionar el kernel `tp-aa1`.
+Seleccionar el kernel `tp-aa1`.
